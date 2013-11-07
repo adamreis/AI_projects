@@ -1,7 +1,7 @@
 # Originally written by nightmarebadger (https://github.com/nightmarebadger/Sokoban-Tkinter)
 # Modified & translated by Adam Reis
 
-__date__ ="$Oct 23, 2013"
+__date__ ="Nov 6, 2013"
 
 
 try:
@@ -19,6 +19,7 @@ except ImportError:
 
 import sys
 import time
+import copy
 
 """
     @ ... Player on floor
@@ -185,81 +186,106 @@ def keyHandler(event):
     if(event.char == 'r'):
         restart()
 
+def mouse_click(event):
+    print "clicked at {}, {}".format(event.x, event.y)
 
-def askLevel():
-    top = Tk()
-    top.withdraw()
-    level = askopenfilename(initialdir = ".", filetypes = [('Level files', '.lvl'), ('All files', '.*')], title = "Choose the level you want to play")
-    top.destroy()
 
-    try:
-        return(makeLevel(level))
-    except IOError:
-        top = Tk()
-        top.withdraw()
-        if(askretrycancel("Error!", "There was an error trying to open your level. Do you want to try again?")):           
-            try:
-                return(askLevel())
-            finally:
-                top.destroy()
+def usage():
+    print """
+    usage:
+
+    python gomoku.py [mode] [board dimension] [winning chain length] [time limit]
+
+    ex: python gomoku.py 1 12 5 60
+
+    """
+class GomokuState:
+    def __init__(self, board=None):
+        if board:
+            self.board = board
         else:
-            top.destroy()
-            return(False)
-    
+            self.reset()
+
+    def reset(self):
+        self.board = []
+
+
+class GomokuPlayer:
+    def __init__(self, board_dimension, winning_length, time_limit):
+# temp 
+        self.player_turn = True
+
+        self.board_dimension = board_dimension
+        self.winning_length = winning_length
+        self.time_limit = time_limit
+
+        self.root = Tk()
+        self.root.title("Gomoku!")
+        self.root.focus_force()
+        self.root.bind_all("<Button-1>", self._mouse_click)
+
+        self.width=500
+
+        self.canvas = Canvas(self.root, width=self.width, height=self.width)
+        self.canvas.pack()
+
+        self.state = []
+        for i in range(board_dimension):
+            self.state.append(['.']*board_dimension)
+        # self.state[2][3]='X'
+
+        self._draw()
+
+        self.root.mainloop()
+
+    def _draw(self):
+        self.line_width = self.width/(self.board_dimension+1)
+
+        self.canvas.delete("all")
+        for i in range(self.line_width, self.width-self.line_width, self.line_width):
+            self.canvas.create_line(i, 0, i, self.width)
+
+        for i in range(self.line_width, self.width-self.line_width, self.line_width):
+            self.canvas.create_line(0, i, self.width, i)
+
+        for i in range(self.board_dimension):
+            for j in range(self.board_dimension):
+                if(self.state[i][j] == '.'):
+                    pass
+                elif(self.state[i][j] == 'X'):
+                    self._circle((j+1)*self.line_width, (i+1)*self.line_width, "black")
+                elif(self.state[i][j] == 'O'):
+                    self._circle((j+1)*self.line_width, (i+1)*self.line_width, "white")
+
+    def _circle(self, x, y, color):
+        self.canvas.create_oval(x-self.line_width/2.3, y-self.line_width/2.3, x+self.line_width/2.3, y+self.line_width/2.3, fill=color)
+
+    def _mouse_click(self, event):
+        y_index = (event.y-self.line_width/2)/self.line_width
+        x_index = (event.x-self.line_width/2)/self.line_width
+
+        if not (x_index>=0 and y_index>=0 and x_index<self.board_dimension and y_index<self.board_dimension):
+            return
+        
+        print "clicked at {}, {}".format(y_index, x_index)
+
+        if self.player_turn:
+            symbol = 'O'
+        else:
+            symbol = 'X'
+        self.player_turn = not self.player_turn
+
+        self.state[y_index][x_index]=symbol
+        self._draw()
+
+
 if __name__ == '__main__':
-    p = askLevel()
-    if(not p):
-        pass
-    else:
-        w = 0
-        for array in p:
-            if len(array) > w:
-                w = len(array)
-        h = len(p)
+    if len(sys.argv) != 5:
+        usage()
+        sys.exit(2)
 
-        unblocked_space = [' ', '.']
-        blocked_space = ['$', '*']
+    mode, board_dimension, winning_length, time_limit = \
+                    [int(i) for index, i in enumerate(sys.argv) if index]
 
-        max_width = 2000
-        max_height = 2000
+    gomo = GomokuPlayer(board_dimension, winning_length, time_limit)
 
-        wid = hei = 50
-
-        if(wid*w > max_width or hei*h > max_height):
-            wid = hei = min(max_width//w, max_height//h)
-        width = wid * w
-        height = hei * h
-
-
-        try:
-            ply_x, ply_y = findPlayer()
-        except TypeError:
-            print "Your map doesn't have exactly one player on it!"
-            sys.exit()
-        except IndexError:
-            print "Your map doesn't seem to be formatted correctly."
-            sys.exit()
-
-        root = Tk()
-        root.title("Simple Sokoban clone")
-        root.focus_force()
-
-        canvas = Canvas(root, width=width, height=height)
-        canvas.pack()
-        draw()
-
-        root.bind_all("<Escape>", kill)
-        root.bind_all("<Key>", keyHandler)
-
-        global MOVES
-        MOVES = ''
-
-        if len(sys.argv) == 2:
-            moves = sys.argv[1].split(', ')
-            for char in moves:
-                root.update()
-                movement(char)
-                time.sleep(.1)
-                
-
-        root.mainloop()
