@@ -22,12 +22,9 @@ import time
 import copy
 
 """
-    @ ... Player on floor
-    # ... wall
-    $ ... Box on floor
     . ... Empty Goal
-    + ... Player on Goal
-    * ... Box on goal
+    X ... Black 
+    O ... White
     
 """
 
@@ -200,14 +197,152 @@ def usage():
 
     """
 class GomokuState:
-    def __init__(self, board=None):
-        if board:
-            self.board = board
+    def __init__(self, prev_state=None, new_move=None, board_dimension=None, win_length=None):
+        if prev_state:
+            self.board_dimension = prev_state.board_dimension
+            self.win_length = prev_state.win_length
+            self.board = copy.deepcopy(prev_state.board)
+            self.move(new_move)
+
         else:
+            self.board_dimension = board_dimension
+            self.win_length = win_length
             self.reset()
+
+    def move(self, new_move):
+        # new move = ('X', (1,3))
+        if not new_move:
+            return -1
+
+        row = new_move[1][0]
+        column = new_move[1][1]
+        symbol = new_move[0]
+
+        self.board[row][column]=symbol
+
+        # check up and down
+        count = 1
+        # up
+        for r in range(row-1,-1,-1):
+            if count>self.win_length:
+                break
+            if self.board[r][column]==symbol:
+                count+=1
+                continue
+            else:
+                break
+        # down
+        for r in range(row+1, self.board_dimension, 1):
+            if count>self.win_length:
+                break
+            if self.board[r][column]==symbol:
+                count+=1
+                continue
+            else:
+                break
+
+        if count==self.win_length:
+            print "WINNNNNNN"
+
+        # check left and right
+        count = 1
+        # left
+        for c in range(column-1,-1,-1):
+            if count>self.win_length:
+                break
+            if self.board[row][c]==symbol:
+                count+=1
+                continue
+            else:
+                break
+
+        # right
+        for c in range(column+1, self.board_dimension, 1):
+            if count>self.win_length:
+                break
+            if self.board[row][c]==symbol:
+                count+=1
+                continue
+            else:
+                break
+
+
+        if count==self.win_length:
+            print "WINNNNNNN"
+
+
+
+        # check NE and SW
+        count = 1
+        # NE
+        r = row-1
+        c = column+1
+        # import pdb; pdb.set_trace()
+        while r>=0 and c<self.board_dimension:
+            if count>self.win_length:
+                break
+            if self.board[r][c]==symbol:
+                count+=1
+                r-=1
+                c+=1
+                continue
+            else:
+                break
+        # SW
+        r = row+1
+        c = column-1
+        while r<len(self.board) and c>=0:
+            if count>self.win_length:
+                break
+            if self.board[r][c]==symbol:
+                count+=1
+                r+=1
+                c-=1
+                continue
+            else:
+                break
+
+        if count==self.win_length:
+            print "WINNNNNNN"
+
+        # check NW and SE
+        count = 1
+        # NW
+        r = row-1
+        c = column-1
+        while r>=0 and c>=0:
+            if count>self.win_length:
+                break
+            if self.board[r][c]==symbol:
+                count+=1
+                r-=1
+                c-=1
+                continue
+            else:
+                break
+        # SE
+        r = row+1
+        c = column+1
+        while r<self.board_dimension and c<self.board_dimension:
+            if count>self.win_length:
+                break
+            if self.board[r][c]==symbol:
+                count+=1
+                r+=1
+                c+=1
+                continue
+            else:
+                break
+
+        if count==self.win_length:
+            print "WINNNNNNN"
+
+
 
     def reset(self):
         self.board = []
+        for _ in range(self.board_dimension):
+            self.board.append(['.']*self.board_dimension)
 
 
 class GomokuPlayer:
@@ -229,10 +364,7 @@ class GomokuPlayer:
         self.canvas = Canvas(self.root, width=self.width, height=self.width)
         self.canvas.pack()
 
-        self.state = []
-        for i in range(board_dimension):
-            self.state.append(['.']*board_dimension)
-        # self.state[2][3]='X'
+        self.state = GomokuState(board_dimension=board_dimension, win_length=winning_length)
 
         self._draw()
 
@@ -250,11 +382,11 @@ class GomokuPlayer:
 
         for i in range(self.board_dimension):
             for j in range(self.board_dimension):
-                if(self.state[i][j] == '.'):
+                if(self.state.board[i][j] == '.'):
                     pass
-                elif(self.state[i][j] == 'X'):
+                elif(self.state.board[i][j] == 'X'):
                     self._circle((j+1)*self.line_width, (i+1)*self.line_width, "black")
-                elif(self.state[i][j] == 'O'):
+                elif(self.state.board[i][j] == 'O'):
                     self._circle((j+1)*self.line_width, (i+1)*self.line_width, "white")
 
     def _circle(self, x, y, color):
@@ -275,7 +407,8 @@ class GomokuPlayer:
             symbol = 'X'
         self.player_turn = not self.player_turn
 
-        self.state[y_index][x_index]=symbol
+        self.state = GomokuState(self.state, (symbol, (y_index, x_index)))
+        # self.state[y_index][x_index]=symbol
         self._draw()
 
 
