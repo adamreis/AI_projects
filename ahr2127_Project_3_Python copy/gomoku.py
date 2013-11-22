@@ -28,10 +28,5 @@ if __name__ == '__main__':
     mode, board_dimension, winning_length, time_limit = \
                     [int(i) for index, i in enumerate(sys.argv) if index]
 
-    if mode==1:
-        gomo = GomokuGame(board_dimension, winning_length, time_limit, HumanPlayer, SmartPlayer)
-    elif mode==2:
-        gomo = GomokuGame(board_dimension, winning_length, time_limit, HumanPlayer, RandomPlayer)
-    elif mode==3:
-        gomo = GomokuGame(board_dimension, winning_length, time_limit, SmartPlayer, SmartPlayer)
+    gomo = GomokuGame(board_dimension, winning_length, time_limit, HumanPlayer, SmartPlayer)
 

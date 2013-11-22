@@ -1,0 +1,7 @@
+- human player can overwrite computer player
+
+optimize evaluation function + stringifying
+
+hash states so we don't re-evaluate once we make a move
+
+prioritize spaces 1 away over those 2 away (next_states)
