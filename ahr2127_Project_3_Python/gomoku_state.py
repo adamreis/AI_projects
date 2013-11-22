@@ -164,7 +164,7 @@ class GomokuState:
             self.score-=other_dict[s]
             if inst_dict[s]:
                 self.instant_lose.append(s)
-                self.score += -10000000000
+                # self.score += -10000000000
                 # return
 
 
